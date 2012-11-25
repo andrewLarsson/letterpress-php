@@ -1,9 +1,5 @@
 <?php
-include_once "../config/db_config";
-
 class Token {
-	global $db;
-
 	public $token;
 
 	function __construct() {
@@ -17,7 +13,8 @@ class Token {
 	}
 
 	function save() {
-		$query = "";
+		global $db;
+		$query = "INSERT INTO tokens (token) VALUES ('{$this->token}');";
 		mysql_query($query, $db);
 	}
 }
