@@ -12,13 +12,13 @@ function action() {
 
 	if(isset($_REQUEST['register'])) {
 		if(getNewToken()) {
-			$returnStatement['status'] = 1;
-			$returnStatement['message'] = "There was a problem creating a new authentication token.";
-			returnJSON($returnStatement);
-		} else {
 			$returnStatement['status'] = 0;
 			$returnStatement['message'] = "Your unique authentication token has been registered.";
 			$returnStatement['data']['token'] = $token;
+			returnJSON($returnStatement);
+		} else {
+			$returnStatement['status'] = 1;
+			$returnStatement['message'] = "There was a problem creating a new authentication token.";
 			returnJSON($returnStatement);
 		}
 	} else if(isset($_REQUEST['authenticate'])) {
