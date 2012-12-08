@@ -1,5 +1,5 @@
 <?php
-include "classes/token.php";
+include_once "classes/token.php";
 global $token;
 
 if(isset($_REQUEST['register'])) {
@@ -11,12 +11,13 @@ if(isset($_REQUEST['register'])) {
 function getNewToken() {
 	global $token;
 
-	$tokenObj = new authToken();
-	$tokenObj->register();
-	$token = $tokenObj->token;
-	$returnStatement['status'] = 0;
-	$returnStatement['token'] = $token;
-	$returnJSON($returnStatement);
+	$tokenObj = new Token();
+	if($tokenObj->register()){
+		$token = $tokenObj->token;
+		$returnStatement['status'] = 0;
+		$returnStatement['token'] = $token;
+		$returnJSON($returnStatement);
+	}
 }
 
 function checkAuth() {
