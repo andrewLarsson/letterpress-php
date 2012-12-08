@@ -1,8 +1,5 @@
 <?php
-
 include_once "../config/config.php";
-
-echo validate_word($_GET["word"])?("YES"):("NO");
 
 function validate_word($word) {
 	$file = substr($word, 0, 2) . ".txt";
@@ -21,9 +18,10 @@ function validate_word($word) {
 		return false;
 	}
 }
+
 function sanitize_word($word) {
 	$newWord = strtolower($word);
-	$newWord = preg_replace('/[^a-z]/', '', $word);
+	$newWord = preg_replace('/[^a-z]/', '', $newWord);
 	
 	return $newWord;
 }
