@@ -13,8 +13,8 @@ class Word {
 		$file = substr($word, 0, 2) . ".txt";
 		$handle = @fopen(SITE_ROOT . "/api/resources/dictionary/" . $file, "r");
 		if($handle) {
-			while (($buffer = fgets($handle, 4096)) !== false) {
-				if ($this->sanitize($word) == $this->sanitize($buffer)) {
+			while(($buffer = fgets($handle, 4096)) !== false) {
+				if($this->sanitize($word) == $this->sanitize($buffer)) {
 					return true;
 				}
 			}
