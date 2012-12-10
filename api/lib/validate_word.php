@@ -1,28 +1,36 @@
 <?php
-include_once "../config/config.php";
+class Word {
+	public $word;
 
-function validate_word($word) {
-	$file = substr($word, 0, 2) . ".txt";
-	$handle = @fopen(SITE_ROOT . "/api/resources/dictionary/" . $file, "r");
-	if ($handle) {
-		while (($buffer = fgets($handle, 4096)) !== false) {
-			if (sanitize_word($word) == sanitize_word($buffer)) {
-				return true;
-			}
+	function __construct($word = NULL) {
+		if(isset($word)) {
+			$this->word = $word;
 		}
-		if (!feof($handle)) {
-			echo "Error: unexpected fgets() fail\n";
-		}
-		fclose($handle);
-	} else {
-		return false;
+		return true;
 	}
-}
 
-function sanitize_word($word) {
-	$newWord = strtolower($word);
-	$newWord = preg_replace('/[^a-z]/', '', $newWord);
-	
-	return $newWord;
+	function validate($word) {
+		$file = substr($word, 0, 2) . ".txt";
+		$handle = @fopen(SITE_ROOT . "/api/resources/dictionary/" . $file, "r");
+		if($handle) {
+			while (($buffer = fgets($handle, 4096)) !== false) {
+				if ($this->sanitize($word) == $this->sanitize($buffer)) {
+					return true;
+				}
+			}
+			if(!feof($handle)) {
+				return false;
+			}
+			fclose($handle);
+		} else {
+			return false;
+		}
+	}
+
+	function sanitize($word) {
+		$newWord = strtolower($word);
+		$newWord = preg_replace('/[^a-z]/', '', $newWord);
+		return $newWord;
+	}
 }
 ?>
