@@ -1,23 +1,23 @@
 <?php
-include_once "token.php";
-
 class Game {
-	//A game will be represented by mysql: gameID, player1 (token), player2 (token), currentTurn (token), board (json), playedWords (json), gameStatus(pendingPublic, pendingPrivate, inplay, finished (token of winner)), skipCount
-	
+	/*Contains all the variables and methods required to construct a game and take action on it.*/
+
+	//A game is represented by MySQL: id, player1 (token), player2 (token), current_turn (token), board (json), played_words (json), game_status(pending_public, pending_private, inplay, finished (winner)), skip_count
+	//All players are represented by an authentication token.
+
+	/*Public Properties*/
 	public $game;
-	
 	public $gameBoard;
 	public $wordList;
-	
+	public $activePlayer;
+	public $opponent;
+	public $currentTurn;
+
+	/*Private Variables*/
 	private $player1;
 	private $player2;
 	private $gameStatus;
-	
-	public $activePlayer; //represented by an auth token
-	public $opponent; //represented by an auth token
-	
-	public $currentTurn; //represented by an auth token
-	
+
 	function __construct($game = NULL) {
 		if(isset($game)) {
 			$this->game = $game;
@@ -26,19 +26,20 @@ class Game {
 	}
 
 	function create($token) {
-		//creates a new empty game state
-		
+		/*Creates a fresh, empty game.*/
+
 		$letterBank = "abcdefghijklmnopqrstuvwxyz";
 		$gameBoard = array();
 		$valid = false;
-
 		while(!$valid) {
 			$placed["i"] = false;
 			$placed["q"] = false;
 			for($i = 0; $i < 5; $i++) {
 				for($j = 0; $j < 5; $j++) {
 					$gameBoard[$i][$j]["letter"] = substr($letterBank, rand(0, 25), 1);
-					$gameBoard[$i][$j]["owner"] = 0; // 0 = none; 1 = player1; 2 = player2
+
+					//The owner is marked with an auth token (or 0 for no owner).
+					$gameBoard[$i][$j]["owner"] = 0;
 					if($gameBoard[$i][$j]["letter"] == "q") {
 						$placed["q"] = true;
 					}
@@ -52,87 +53,85 @@ class Game {
 				$valid = false;
 			}
 		}
-		
 		$this->gameBoard = $gameBoard;
 		$this->wordList = array();
 		$this->activePlayer = $this->player1 = $this->currentTurn = $token;
 	}
-	
+
 	function load($token) {
-		//Loads an existing game from mysql based off a user token
+		/*Loads an existing game from a token.*/
+
 	}
-	
+
 	function save() {
-		//updates the database with any added data
+		/*Updates the database with any new data for the game.*/
+
 	}
-	
+
 	function resign() {
-		
+		/*Allows a player to forfeit a game.*/
+
 	}
-	
+
 	function skip() {
-		
+		/*Allows a player to pass their turn.*/
+
 	}
-	
+
 	function deserializeWord($wordJSON) {
-		//Words are represented by a json array of points
+		/*Represents a word by a JSON array of XY coordinates.*/
+
 		$decoded = json_decode($wordJSON);
 		$word = "";
-		
 		foreach ($decoded as $point) {
 			$word .= $this->gameBoard[$point[0]][$point[1]]['letter'];
 		}
-		
 		return $word;
 	}
-	
+
 	function checkWord($word) {
-		//Checks a word agaisnt all previously played words
+		/*Checks a word against all previously played words.*/
+
 		$wordLength = strlen($word);
-		
 		foreach ($this->wordList as $playedWord) {
 			if (substr($playedWord, 0, $wordLength) == $word) {
-				//either matches exactly, or word is a literal prefix of an allready played word
+				//The word either matches exactly or is a literal prefix of an previously played word.
 				return false;
 			}
 		}
-		
-		//word is unique
+
+		//The word is unique.
 		return true;
 	}
-	
+
 	function playWord($wordJSON) {
 		$decoded = json_decode($wordJSON);
-		
+
 		if ($this->activePlayer == $this->currentTurn) {
 			$playerValue = $this->activePlayer == $this->player1 ? 1 : 2;
 			$opponentValue = $playerValue == 1 ? 2 : 1;
-			
 			$protectedLetters = array();
-			
 			foreach ($decoded as $point) {
 				if ($this->gameBoard[$point[0]][$point[1]]['owner'] == $opponentValue) {
-					//check to see if letter is protected, add it to protectedLetters
+					//Check to see if the letter is protected, and add it to protectedLetters.
 				}
 			}
-			
 			foreach ($decoded as $point) {
 				if ($this->gameBoard[$point[0]][$point[1]]['owner'] == $opponentValue) {
-					//check to see if letter is in protectedLetters, if not, switch to playerValue
+					//Check to see if letter is in protectedLetters, and if not, switch to playerValue.
 				}
 			}
-			
-			//give all white squares to the player
+
+			//Give all of the unowned squares to the player who captured them.
 			foreach ($decoded as $point) {
 				if ($this->gameBoard[$point[0]][$point[1]]['owner'] == 0) {
 					$this->gameBoard[$point[0]][$point[1]]['owner'] = $playerValue;
 				}
 			}
 		}
-		
 		array_push($this->wordList, deserializeWord($wordJSON));
 		$this->currentTurn = $this->opponent;
-		//check for ending conditions
+		//Check for ending conditions.
 	}
 }
 ?>

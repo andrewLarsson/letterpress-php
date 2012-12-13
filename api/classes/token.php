@@ -1,7 +1,11 @@
 <?php
 class Token {
+	/*Contains all the variables and methods required to construct a token and authenticate it.*/
+
+	/*Public Properties*/
 	public $token;
 
+	/*Public Methods*/
 	function __construct($inputToken = NULL) {
 		if(isset($inputToken)) {
 			$this->token = $inputToken;
@@ -10,6 +14,8 @@ class Token {
 	}
 
 	function register() {
+		/*Creates a new token and saves it to the database.*/
+
 		$this->token = md5(uniqid(rand(), true));
 		if(!$this->save()) {
 			return false;
@@ -18,6 +24,8 @@ class Token {
 	}
 
 	function save() {
+		/*Writes the token to the database.*/
+
 		global $db;
 
 		if(!$db) {
@@ -29,6 +37,8 @@ class Token {
 	}
 
 	function authenticate() {
+		/*Checks to make sure the token is valid.*/
+
 		global $db;
 
 		if(!$db) {

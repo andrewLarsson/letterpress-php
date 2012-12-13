@@ -1,7 +1,11 @@
 <?php
 class Word {
+	/*Contains all the variables and methods required to construct a token and authenticate it.*/
+
+	/*Public Properties*/
 	public $word;
 
+	/*Public Methods*/
 	function __construct($word = NULL) {
 		if(isset($word)) {
 			$this->word = $word;
@@ -10,7 +14,8 @@ class Word {
 	}
 
 	function validate($word) {
-		//validates a word with the dictionary
+		/*Validates a word with the dictionary.*/
+
 		$file = substr($word, 0, 2) . ".txt";
 		$handle = @fopen(SITE_ROOT . "/api/resources/dictionary/" . $file, "r");
 		if($handle) {
@@ -29,7 +34,8 @@ class Word {
 	}
 
 	function sanitize($word) {
-		//removes any invalid/dangerous characters from a supplied word
+		/*Removes any invalid/dangerous characters from a supplied word.*/
+
 		$newWord = strtolower($word);
 		$newWord = preg_replace('/[^a-z]/', '', $newWord);
 		return $newWord;
