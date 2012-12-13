@@ -10,6 +10,7 @@ class Word {
 	}
 
 	function validate($word) {
+		//validates a word with the dictionary
 		$file = substr($word, 0, 2) . ".txt";
 		$handle = @fopen(SITE_ROOT . "/api/resources/dictionary/" . $file, "r");
 		if($handle) {
@@ -28,6 +29,7 @@ class Word {
 	}
 
 	function sanitize($word) {
+		//removes any invalid/dangerous characters from a supplied word
 		$newWord = strtolower($word);
 		$newWord = preg_replace('/[^a-z]/', '', $newWord);
 		return $newWord;
