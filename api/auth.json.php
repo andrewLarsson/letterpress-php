@@ -2,7 +2,7 @@
 include_once "classes/token.php";
 include_once "config/config.php";
 include_once "lib/database.php";
-include_once "lib/returnJSON.php";
+include_once "lib/json.php";
 
 action();
 finish();
@@ -14,7 +14,7 @@ function action() {
 		if(getNewToken()) {
 			$returnStatement['status'] = 0;
 			$returnStatement['message'] = "Your unique authentication token has been registered.";
-			$returnStatement['data']['token'] = $token;
+			$returnStatement['data']['token'] = $token->id;
 			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
@@ -25,7 +25,7 @@ function action() {
 		if(checkAuth()) {
 			$returnStatement['status'] = 0;
 			$returnStatement['message'] = "The authentication token is valid.";
-			$returnStatement['data']['token'] = $token;
+			$returnStatement['data']['token'] = $token->id;
 			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
@@ -42,11 +42,10 @@ function action() {
 function getNewToken() {
 	global $token;
 
-	$tokenObj = new Token();
-	if(!$tokenObj->register()){
+	$token = new Token();
+	if(!$token->register()){
 		return false;
 	}
-	$token = $tokenObj->token;
 	return true;
 }
 
@@ -56,9 +55,8 @@ function checkAuth() {
 	if(!isset($_REQUEST['token'])) {
 		return false;
 	}
-	$token = $_REQUEST['token'];
-	$tokenObj = new Token($token);
-	if(!$tokenObj->authenticate()) {
+	$token = new Token($_REQUEST['token']);
+	if(!$token->authenticate()) {
 		return false;
 	}
 	return true;

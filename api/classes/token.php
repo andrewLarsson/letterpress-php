@@ -3,12 +3,12 @@ class Token {
 	/*Contains all the variables and methods required to construct a token and authenticate it.*/
 
 	/*Public Properties*/
-	public $token;
+	public $id;
 
 	/*Public Methods*/
-	function __construct($inputToken = NULL) {
-		if(isset($inputToken)) {
-			$this->token = $inputToken;
+	function __construct($id = NULL) {
+		if(isset($id)) {
+			$this->id = $id;
 		}
 		return true;
 	}
@@ -20,19 +20,6 @@ class Token {
 		if(!$this->save()) {
 			return false;
 		}
-		return true;
-	}
-
-	function save() {
-		/*Writes the token to the database.*/
-
-		global $db;
-
-		if(!$db) {
-			return false;
-		}
-		$query = "INSERT INTO tokens (token) VALUES ('{$this->token}');";
-		mysql_query($query, $db);
 		return true;
 	}
 
@@ -53,5 +40,20 @@ class Token {
 		}
 		return true;
 	}
+
+	/*Private Functions*/
+	private function save() {
+		/*Writes the token to the database.*/
+
+		global $db;
+
+		if(!$db) {
+			return false;
+		}
+		$query = "INSERT INTO tokens (token) VALUES ('{$this->token}');";
+		mysql_query($query, $db);
+		return true;
+	}
+
 }
 ?>

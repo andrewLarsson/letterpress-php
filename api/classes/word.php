@@ -5,6 +5,9 @@ class Word {
 	/*Public Properties*/
 	public $word;
 
+	/*Private Variables*/
+	private $valid;
+
 	/*Public Methods*/
 	function __construct($word = NULL) {
 		if(isset($word)) {
@@ -16,20 +19,23 @@ class Word {
 	function validate($word) {
 		/*Validates a word with the dictionary.*/
 
+		if(isset($this->valid)) {
+			return $this->valid;
+		}
 		$file = substr($word, 0, 2) . ".txt";
 		$handle = @fopen(SITE_ROOT . "/api/resources/dictionary/" . $file, "r");
 		if($handle) {
-			while(($buffer = fgets($handle, 4096)) !== false) {
+			while(($buffer = fgets($handle) !== false) {
 				if($this->sanitize($word) == $this->sanitize($buffer)) {
-					return true;
+					return $this->valid = true;
 				}
 			}
 			if(!feof($handle)) {
-				return false;
+				return $this->valid = false;
 			}
 			fclose($handle);
 		} else {
-			return false;
+			return $this->valid = false;
 		}
 	}
 
