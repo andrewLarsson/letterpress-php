@@ -16,7 +16,7 @@ class Token {
 	function register() {
 		/*Creates a new token and saves it to the database.*/
 
-		$this->token = md5(uniqid(rand(), true));
+		$this->id = md5(uniqid(rand(), true));
 		if(!$this->save()) {
 			return false;
 		}
@@ -31,10 +31,10 @@ class Token {
 		if(!$db) {
 			return false;
 		}
-		if(!isset($this->token)) {
+		if(!isset($this->id)) {
 			return false;
 		}
-		$query = "SELECT token FROM tokens WHERE token='{$this->token}';";
+		$query = "SELECT token FROM tokens WHERE token='{$this->id}';";
 		if(!mysql_fetch_array(mysql_query($query, $db))) {
 			return false;
 		}
@@ -50,10 +50,9 @@ class Token {
 		if(!$db) {
 			return false;
 		}
-		$query = "INSERT INTO tokens (token) VALUES ('{$this->token}');";
+		$query = "INSERT INTO tokens (token) VALUES ('{$this->id}');";
 		mysql_query($query, $db);
 		return true;
 	}
-
 }
 ?>
