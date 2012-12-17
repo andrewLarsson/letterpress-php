@@ -51,7 +51,7 @@ class Token {
 			return false;
 		}
 		$query = "INSERT INTO tokens (token) VALUES ('{$this->id}');";
-		mysql_query($query, $db);
+		mysql_query($query, $db) or die(mysql_error());
 		return true;
 	}
 }

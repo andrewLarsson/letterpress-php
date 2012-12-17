@@ -1,6 +1,6 @@
 <?php
 include_once "classes/game.php";
-include_once "classes/word.php"
+include_once "classes/word.php";
 include_once "config/config.php";
 include_once "lib/database.php";
 include_once "lib/json.php";
@@ -15,7 +15,7 @@ function action() {
 		if(createNewGame()) {
 			$returnStatement['status'] = 0;
 			$returnStatement['message'] = "Your new game has been created.";
-			$returnStatement['data']['game_id'] = $game->id;
+			$returnStatement['data']['game'] = $game->getGameStatus();
 			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
@@ -75,9 +75,12 @@ function action() {
 
 function createNewGame() {
 	global $game;
-
+	
+	if(!isset($_REQUEST['token'])) {
+		return false;
+	}
 	$game = new Game();
-	if(!$game->create()) {
+	if(!$game->create($_REQUEST['token'])) {
 		return false;
 	}
 	return true;
@@ -91,7 +94,7 @@ function joinGame() {
 	} else {
 		$game = new Game();
 	}
-	if(!$game->join() {
+	if(!$game->join()) {
 		return false;
 	}
 	return true;
@@ -127,7 +130,7 @@ function resignGame() {
 	global $game;
 
 	if(!isset($_REQUEST['game_id'])) {
-		return false
+		return false;
 	}
 	$game = new Game($_REQUEST['game_id']);
 	if(!$game->resign()) {

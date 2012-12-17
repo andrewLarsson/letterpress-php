@@ -25,7 +25,7 @@ class Word {
 		$file = substr($word, 0, 2) . ".txt";
 		$handle = @fopen(SITE_ROOT . "/api/resources/dictionary/" . $file, "r");
 		if($handle) {
-			while(($buffer = fgets($handle) !== false) {
+			while(($buffer = fgets($handle)) !== false) {
 				if($this->sanitize($word) == $this->sanitize($buffer)) {
 					return $this->valid = true;
 				}

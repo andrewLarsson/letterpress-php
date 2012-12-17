@@ -2,7 +2,7 @@
 class Game {
 	/*Contains all the variables and methods required to construct a game and take action on it.*/
 
-	//A game is represented by MySQL: id, player1 (token), player2 (token), current_turn (token), board (json), played_words (json), game_status(pending_public, pending_private, inplay, finished (winner)), skip_count
+	//A game is represented by MySQL: id, player1 (token), player2 (token), current_turn (token), board (json), words (json), game_status(pending_public, pending_private, inplay, finished (winner)), skip_count
 	//All players are represented by an authentication token.
 
 	/*Public Properties*/
@@ -40,22 +40,37 @@ class Game {
 
 					//The owner is marked with the player's ID (or a 0 for no owner).
 					$board[$i][$j]["owner"] = 0;
-					$placed[$board[$i][$j]["letter"]] = true
+					$placed[$board[$i][$j]["letter"]] = true;
 				}
 			}
 			$valid = true;
 
 			//This is the logic for making sure a valid game board was produced.
-			if(array_key_exists("q", $placed) && !array_key_exists("i", $placed) {
+			if(array_key_exists("q", $placed) && !array_key_exists("i", $placed)) {
 				$valid = false;
 			}
 		}
 		$this->board = $board;
 		$this->wordList = array();
 		$this->activePlayer = $this->player1 = $this->currentTurn = $token;
-		if(!$this->save()) {
+		$this->gameStatus = "pending";
+		
+		global $db;
+
+		if(!$db) {
 			return false;
 		}
+		
+		//Create new entry in table
+		$query = "INSERT INTO games (player1, current_turn, board, words, game_status) VALUES ('".$this->player1."', '".$this->currentTurn."', '".mysql_real_escape_string(json_encode($this->board))."', '".mysql_real_escape_string(json_encode($this->words))."', 'pending');";
+		mysql_query($query, $db) or die(mysql_error());
+		
+		//Get game ID
+		$result = mysql_query("SELECT * FROM games
+ WHERE player1='".$this->player1."' ORDER BY id DESC") or die(mysql_error()); 
+		$row = mysql_fetch_array($result);
+		$this->id = $row['id'];
+		
 		return true;
 	}
 
@@ -96,6 +111,24 @@ class Game {
 
 		return true;
 	}
+	
+	function getGameStatus() {
+		//returns an array of the game status, based on given permission of the active user
+		
+		$returnData = array();
+		
+		$returnData['game_id'] = $this->id;
+		$returnData['board'] = $this->board;
+		if ($this->activePlayer == $this->currentTurn) {
+			$returnData['current_turn'] = true;
+		} else {
+			$returnData['current_turn'] = false;
+		}
+		$returnData['word_list'] = $this->wordList;
+		$returnData['game_status'] = $this->gameStatus;
+		
+		return $returnData;
+	}
 
 	function skip() {
 		/*Allows a player to pass their turn.*/
@@ -112,13 +145,25 @@ class Game {
 	/*Private Functions*/
 	private function load($token) {
 		/*Loads an existing game from a token.*/
+		
+		global $db;
 
+		if(!$db) {
+			return false;
+		}
+		
 		return true;
 	}
 
 	private function save() {
 		/*Updates the database with any new data for the game.*/
+		
+		global $db;
 
+		if(!$db) {
+			return false;
+		}
+		
 		return true;
 	}
 
