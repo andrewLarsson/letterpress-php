@@ -34,7 +34,7 @@ class Token {
 		if(!isset($this->id)) {
 			return false;
 		}
-		$query = "SELECT token FROM tokens WHERE token='{$this->id}';";
+		$query = "SELECT token FROM tokens WHERE token='" . $this->id . "';";
 		if(!mysql_fetch_array(mysql_query($query, $db))) {
 			return false;
 		}
@@ -50,8 +50,10 @@ class Token {
 		if(!$db) {
 			return false;
 		}
-		$query = "INSERT INTO tokens (token) VALUES ('{$this->id}');";
-		mysql_query($query, $db) or die(mysql_error());
+		$query = "INSERT INTO tokens (token) VALUES ('" . $this->id . "');";
+		if(!mysql_query($query, $db)) {
+			return false;
+		}
 		return true;
 	}
 }

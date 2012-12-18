@@ -30,6 +30,11 @@ class Game {
 	function create($token) {
 		/*Creates a fresh, empty game.*/
 
+		global $db;
+
+		if(!$db) {
+			return false;
+		}
 		$letterBank = "abcdefghijklmnopqrstuvwxyz";
 		$board = array();
 		$valid = false;
@@ -54,23 +59,20 @@ class Game {
 		$this->wordList = array();
 		$this->activePlayer = $this->player1 = $this->currentTurn = $token;
 		$this->gameStatus = "pending";
-		
-		global $db;
 
-		if(!$db) {
+		//Create new entry in table.
+		$query = "INSERT INTO games (player1, current_turn, board, words, game_status) VALUES ('" . $this->player1 . "', '" . $this->currentTurn . "', '" . mysql_real_escape_string(json_encode($this->board)) . "', '" . mysql_real_escape_string(json_encode($this->words)) . "', 'pending');";
+		if(!mysql_query($query, $db)) {
 			return false;
 		}
-		
-		//Create new entry in table
-		$query = "INSERT INTO games (player1, current_turn, board, words, game_status) VALUES ('".$this->player1."', '".$this->currentTurn."', '".mysql_real_escape_string(json_encode($this->board))."', '".mysql_real_escape_string(json_encode($this->words))."', 'pending');";
-		mysql_query($query, $db) or die(mysql_error());
-		
-		//Get game ID
-		$result = mysql_query("SELECT * FROM games
- WHERE player1='".$this->player1."' ORDER BY id DESC") or die(mysql_error()); 
+
+		//Get game ID.
+		$query = "SELECT * FROM games WHERE player1='" . $this->player1 . "' ORDER BY id DESC";
+		if(!$result = mysql_query($query, $db)) {
+			return false;
+		}
 		$row = mysql_fetch_array($result);
 		$this->id = $row['id'];
-		
 		return true;
 	}
 
@@ -111,22 +113,20 @@ class Game {
 
 		return true;
 	}
-	
+
 	function getGameStatus() {
-		//returns an array of the game status, based on given permission of the active user
-		
+		/*Gets an array of the game status based on the permissions of the active user.*/
+
 		$returnData = array();
-		
 		$returnData['game_id'] = $this->id;
 		$returnData['board'] = $this->board;
-		if ($this->activePlayer == $this->currentTurn) {
+		if($this->activePlayer == $this->currentTurn) {
 			$returnData['current_turn'] = true;
 		} else {
 			$returnData['current_turn'] = false;
 		}
 		$returnData['word_list'] = $this->wordList;
 		$returnData['game_status'] = $this->gameStatus;
-		
 		return $returnData;
 	}
 
@@ -145,25 +145,23 @@ class Game {
 	/*Private Functions*/
 	private function load($token) {
 		/*Loads an existing game from a token.*/
-		
+
 		global $db;
 
 		if(!$db) {
 			return false;
 		}
-		
 		return true;
 	}
 
 	private function save() {
 		/*Updates the database with any new data for the game.*/
-		
+
 		global $db;
 
 		if(!$db) {
 			return false;
 		}
-		
 		return true;
 	}
 
