@@ -29,15 +29,15 @@ CREATE TABLE `games` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `tokens`
+-- Table structure for table `users`
 --
 
-CREATE TABLE `tokens` (
+CREATE TABLE `users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `token` varchar(32) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
 --
--- Dumping data for table `tokens`
+-- Dumping data for table `users`
 --

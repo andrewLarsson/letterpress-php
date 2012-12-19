@@ -27,7 +27,7 @@ class Game {
 		return true;
 	}
 
-	function create($token) {
+	function create($user) {
 		/*Creates a fresh, empty game.*/
 
 		global $db;
@@ -57,7 +57,7 @@ class Game {
 		}
 		$this->board = $board;
 		$this->wordList = array();
-		$this->activePlayer = $this->player1 = $this->currentTurn = $token;
+		$this->activePlayer = $this->player1 = $this->currentTurn = $user->token;
 		$this->gameStatus = "pending";
 
 		//Create new entry in table.
@@ -143,7 +143,7 @@ class Game {
 	}
 
 	/*Private Functions*/
-	private function load($token) {
+	private function load($user) {
 		/*Loads an existing game from a token.*/
 
 		global $db;
