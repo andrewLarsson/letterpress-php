@@ -20,10 +20,14 @@ Example:
 	- new
 	- join
 		- game_id
+		- token
 	- play_word
 		- game_id
 		- word
+		- token
 	- skip_turn
 		- game_id
+		- token
 	- resign
 		- game_id
+		- token
