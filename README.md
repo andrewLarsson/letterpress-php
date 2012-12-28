@@ -7,7 +7,7 @@ API Documentation:
 <br/>
 Example:
 `http://www.letterpress-server.com/api/api_call.json.php?action&parameter=value`
-- __*api_call*__
+- __*api_call.json.php*__
 	- _action_
 		- _parameter_
 <br/><br/>
