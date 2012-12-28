@@ -75,7 +75,7 @@ function action() {
 
 function createNewGame() {
 	global $game;
-	
+
 	if(!isset($_REQUEST['token'])) {
 		return false;
 	}
@@ -90,7 +90,11 @@ function joinGame() {
 	global $game;
 
 	if(isset($_REQUEST['game_id'])) {
-		$game = new Game($_REQUEST['game_id']);
+		try {
+			$game = new Game($_REQUEST['game_id']);
+		} catch(NotFound $e) {
+			return false;
+		}
 	} else {
 		$game = new Game();
 	}
@@ -106,7 +110,11 @@ function playWord() {
 	if(!isset($_REQUEST['game_id']) || !isset($_REQUEST['word'])) {
 		return false;
 	}
-	$game = new Game($_REQUEST['game_id']);
+	try {
+		$game = new Game($_REQUEST['game_id']);
+	} catch(NotFound $e) {
+		return false;
+	}
 	if(!$game->playWord($_REQUEST['word'])) {
 		return false;
 	}
@@ -119,7 +127,11 @@ function skipTurn() {
 	if(!isset($_REQUEST['game_id'])) {
 		return false;
 	}
-	$game = new Game($_REQUEST['game_id']);
+	try {
+		$game = new Game($_REQUEST['game_id']);
+	} catch(NotFound $e) {
+		return false;
+	}
 	if(!$game->skip()) {
 		return false;
 	}
@@ -132,7 +144,11 @@ function resignGame() {
 	if(!isset($_REQUEST['game_id'])) {
 		return false;
 	}
-	$game = new Game($_REQUEST['game_id']);
+	try {
+		$game = new Game($_REQUEST['game_id']);
+	} catch(NotFound $e) {
+		return false;
+	}
 	if(!$game->resign()) {
 		return false;
 	}

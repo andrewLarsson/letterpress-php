@@ -18,16 +18,18 @@ class Game {
 	private $player2;
 	private $gameStatus;
 
-	/*Public Methods*/
+	/*Constructor*/
 	function __construct($id = NULL) {
 		if(isset($id)) {
 			$this->id = $id;
-			$this->load();
+			if(!$this->load()) {
+				throw(new NotFound());
+			}
 		}
-		return true;
 	}
 
-	function create($user) {
+	/*Public Methods*/
+	public function create($user) {
 		/*Creates a fresh, empty game.*/
 
 		global $db;
@@ -36,26 +38,26 @@ class Game {
 			return false;
 		}
 		$letterBank = "abcdefghijklmnopqrstuvwxyz";
-		$board = array();
+		$this->board = array();
 		$valid = false;
 		while(!$valid) {
-			for($i = 0; $i < 5; $i++) {
-				for($j = 0; $j < 5; $j++) {
-					$board[$i][$j]["letter"] = substr($letterBank, rand(0, 25), 1);
+			for($i = 0; $i < 5; $i ++) {
+				for($j = 0; $j < 5; $j ++) {
+					$this->board[$i][$j]["letter"] = substr($letterBank, rand(0, 25), 1);
 
 					//The owner is marked with the player's ID (or a 0 for no owner).
-					$board[$i][$j]["owner"] = 0;
-					$placed[$board[$i][$j]["letter"]] = true;
+					$this->board[$i][$j]["owner"] = 0;
+					$placed[$this->board[$i][$j]["letter"]] = true;
 				}
 			}
 			$valid = true;
 
-			//This is the logic for making sure a valid game board was produced.
+			//Make sure a valid game board was produced.
 			if(array_key_exists("q", $placed) && !array_key_exists("i", $placed)) {
 				$valid = false;
 			}
 		}
-		$this->board = $board;
+		$this->board = $this->board;
 		$this->wordList = array();
 		$this->activePlayer = $this->player1 = $this->currentTurn = $user->token;
 		$this->gameStatus = "pending";
@@ -76,45 +78,49 @@ class Game {
 		return true;
 	}
 
-	function join() {
+	public function join() {
 		/*Allows a player to join an existing game.*/
 
+		if(!$this->save()) {
+			return false;
+		}
 		return true;
 	}
 
-	function playWord($wordJSON) {
+	public function playWord($wordJSON) {
+		/*Plays a word*/
+
 		$decoded = json_decode($wordJSON);
 
 		if($this->activePlayer == $this->currentTurn) {
 			$playerValue = $this->activePlayer == $this->player1 ? 1 : 2;
 			$opponentValue = $playerValue == 1 ? 2 : 1;
-			$protectedLetters = array();
 			foreach($decoded as $point) {
 				if($this->board[$point[0]][$point[1]]['owner'] == $opponentValue) {
-					//Check to see if the letter is protected, and add it to protectedLetters.
-				}
-			}
-			foreach($decoded as $point) {
-				if($this->board[$point[0]][$point[1]]['owner'] == $opponentValue) {
-					//Check to see if letter is in protectedLetters, and if not, switch to playerValue.
-				}
-			}
-
-			//Give all of the unowned squares to the player who captured them.
-			foreach($decoded as $point) {
-				if($this->board[$point[0]][$point[1]]['owner'] == 0) {
+					//Give the player the letter if it's not protected.
+					if(!$this->isProtectedLetter($point)) {
+						$this->board[$point[0]][$point[1]]['owner'] = $playerValue;
+					}
+				} else if($this->board[$point[0]][$point[1]]['owner'] == $playerValue) {
+					//Do nothing, as the player already owns the letter.
+				} else {
+					//Give all the unowned letters to the player.
 					$this->board[$point[0]][$point[1]]['owner'] = $playerValue;
 				}
 			}
 		}
-		array_push($this->wordList, deserializeWord($wordJSON));
+		array_push($this->wordList, $this->deserializeWord($wordJSON));
 		$this->currentTurn = $this->opponent;
-		//Check for ending conditions.
 
+		//Check for game-ending conditions.
+
+		if(!$this->save()) {
+			return false;
+		}
 		return true;
 	}
 
-	function getGameStatus() {
+	public function getGameStatus() {
 		/*Gets an array of the game status based on the permissions of the active user.*/
 
 		$returnData = array();
@@ -130,21 +136,25 @@ class Game {
 		return $returnData;
 	}
 
-	function skip() {
+	public function skip() {
 		/*Allows a player to pass their turn.*/
 
+		$this->currentTurn = $this->opponent;
+		if(!$this->save()) {
+			return false;
+		}
 		return true;
 	}
 
-	function resign() {
+	public function resign() {
 		/*Allows a player to forfeit a game.*/
 
 		return true;
 	}
 
 	/*Private Functions*/
-	private function load($user) {
-		/*Loads an existing game from a token.*/
+	private function load() {
+		/*Loads an existing game from an id.*/
 
 		global $db;
 
@@ -177,18 +187,44 @@ class Game {
 	}
 
 	private function checkWord($word) {
-		/*Checks a word against all previously played words.*/
+		/*Checks a word against all previously played words to make sure it does not match exactly or is a literal prifix of any.*/
 
 		$wordLength = strlen($word);
 		foreach($this->wordList as $playedWord) {
 			if(substr($playedWord, 0, $wordLength) == $word) {
-				//The word either matches exactly or is a literal prefix of an previously played word.
 				return false;
 			}
 		}
-
-		//The word is unique.
 		return true;
 	}
+
+	private function isProtectedLetter($point) {
+		/*Checks to see if a letter is surrounded by letters that are owned by the same player.*/
+
+		if(array_key_exists($point[0] + 1, $this->board)) {
+			if(!$this->board[$point[0] + 1][$point[1]]['owner'] == $this->board[$point[0]][$point[1]]['owner']) {
+				return false;
+			}
+		}
+		if(array_key_exists($point[0] - 1, $this->board)) {
+			if(!$this->board[$point[0] - 1][$point[1]]['owner'] == $this->board[$point[0]][$point[1]]['owner']) {
+				return false;
+			}
+		}
+		if(array_key_exists($point[1] + 1, $this->board[$point[0]])) {
+			if(!$this->board[$point[0]][$point[1] + 1]['owner'] == $this->board[$point[0]][$point[1]]['owner']) {
+				return false;
+			}
+		}
+		if(array_key_exists($point[1] - 1, $this->board[$point[0]])) {
+			if(!$this->board[$point[0]][$point[1] - 1]['owner'] == $this->board[$point[0]][$point[1]]['owner']) {
+				return false;
+			}
+		}
+		return true;
+	}
+}
+
+class NotFound extends Exception {
 }
 ?>

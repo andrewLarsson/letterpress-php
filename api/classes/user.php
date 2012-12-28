@@ -5,15 +5,15 @@ class User {
 	/*Public Properties*/
 	public $token;
 
-	/*Public Methods*/
+	/*Constructor*/
 	function __construct($token = NULL) {
 		if(isset($token)) {
 			$this->token = $token;
 		}
-		return true;
 	}
 
-	function register() {
+	/*Public Methods*/
+	public function register() {
 		/*Creates a new token and saves it to the database.*/
 
 		$this->token = md5(uniqid(rand(), true));
@@ -23,7 +23,7 @@ class User {
 		return true;
 	}
 
-	function authenticate() {
+	public function authenticate() {
 		/*Checks to make sure the token is valid.*/
 
 		global $db;
