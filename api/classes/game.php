@@ -57,7 +57,6 @@ class Game {
 				$valid = false;
 			}
 		}
-		$this->board = $this->board;
 		$this->wordList = array();
 		$this->activePlayer = $this->player1 = $this->currentTurn = $user->token;
 		$this->gameStatus = "pending";
