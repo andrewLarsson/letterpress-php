@@ -2,21 +2,23 @@
 class Game {
 	/*Contains all the variables and methods required to construct a game and take action on it.*/
 
-	//A game is represented by MySQL: id, player1 (token), player2 (token), current_turn (token), board (json), words (json), game_status(pending_public, pending_private, inplay, finished (winner)), skip_count
-	//All players are represented by an authentication token.
+	//A game is represented in MySQL as: id, player1 (user), player2 (user), current_turn (user), board (json), word_list (json), game_status(pending, inplay, finished), skip_count, winner (user).
+	//All players are represented by a user id.
 
 	/*Public Properties*/
 	public $id;
+	public $player1;
+	public $player2;
+	public $currentTurn;
 	public $board;
 	public $wordList;
-	public $activePlayer;
-	public $opponent;
-	public $currentTurn;
+	public $gameStatus;
+	public $skipCount;
+	public $winner;
 
 	/*Private Variables*/
-	private $player1;
-	private $player2;
-	private $gameStatus;
+	private $activePlayer;
+	private $opponent;
 
 	/*Constructor*/
 	function __construct($id = NULL) {
@@ -58,17 +60,18 @@ class Game {
 			}
 		}
 		$this->wordList = array();
-		$this->activePlayer = $this->player1 = $this->currentTurn = $user->token;
+		$this->activePlayer = $this->player1 = $this->currentTurn = $user->id;
 		$this->gameStatus = "pending";
+		$this->skipCount = 0;
 
 		//Create new entry in table.
-		$query = "INSERT INTO games (player1, current_turn, board, words, game_status) VALUES ('" . $this->player1 . "', '" . $this->currentTurn . "', '" . mysql_real_escape_string(json_encode($this->board)) . "', '" . mysql_real_escape_string(json_encode($this->words)) . "', 'pending');";
+		$query = "INSERT INTO games (player1, current_turn, board, word_list, game_status, skip_count) VALUES ('" . $this->player1 . "', '" . $this->currentTurn . "', '" . mysql_real_escape_string(json_encode($this->board)) . "', '" . mysql_real_escape_string(json_encode($this->wordList)) . "', '" . $this->gameStatus . "', '" . $this->skipCount . "')";
 		if(!mysql_query($query, $db)) {
 			return false;
 		}
 
 		//Get game ID.
-		$query = "SELECT * FROM games WHERE player1='" . $this->player1 . "' ORDER BY id DESC";
+		$query = "SELECT id FROM games WHERE player1='" . $this->player1 . "' ORDER BY id DESC LIMIT 1";
 		if(!$result = mysql_query($query, $db)) {
 			return false;
 		}
@@ -77,53 +80,76 @@ class Game {
 		return true;
 	}
 
-	public function join() {
+	public function join($user) {
 		/*Allows a player to join an existing game.*/
 
+		global $db;
+
+		if(!$db) {
+			return false;
+		}
+		$query = "SELECT id FROM games WHERE game_status='pending' ORDER BY id ASC LIMIT 1";
+		if(!$result = mysql_query($query, $db)) {
+			return false;
+		}
+		$row = mysql_fetch_array($result);
+		$this->id = $row['id'];
+		if(!$this->load()) {
+			return false;
+		}
+		$this->player2 = $user->id;
+		$this->gameStatus = "inplay";
 		if(!$this->save()) {
 			return false;
 		}
 		return true;
 	}
 
-	public function playWord($wordJSON) {
+	public function playWord($user, $wordJSON) {
 		/*Plays a word*/
 
+		if($this->gameStatus == "finished") {
+			return false;
+		}
+		if($user->id != $this->player1 && $user->id != $this->player2) {
+			return false;
+		}
+		$this->activePlayer = $user->id;
+		if($this->activePlayer != $this->currentTurn) {
+			return false;
+		}
+		$this->opponent = $this->activePlayer == $this->player1 ? $this->player2 : $this->player1;
 		$decoded = json_decode($wordJSON);
-
-		if($this->activePlayer == $this->currentTurn) {
-			$playerValue = $this->activePlayer == $this->player1 ? 1 : 2;
-			$opponentValue = $playerValue == 1 ? 2 : 1;
-			foreach($decoded as $point) {
-				if($this->board[$point[0]][$point[1]]['owner'] == $opponentValue) {
-					//Give the player the letter if it's not protected.
-					if(!$this->isProtectedLetter($point)) {
-						$this->board[$point[0]][$point[1]]['owner'] = $playerValue;
-					}
-				} else if($this->board[$point[0]][$point[1]]['owner'] == $playerValue) {
-					//Do nothing, as the player already owns the letter.
-				} else {
-					//Give all the unowned letters to the player.
+		$playerValue = $this->activePlayer == $this->player1 ? 1 : 2;
+		$opponentValue = $playerValue == 1 ? 2 : 1;
+		foreach($decoded as $point) {
+			if($this->board[$point[0]][$point[1]]['owner'] == $opponentValue) {
+				//Give the player the letter if it's not protected.
+				if(!$this->isProtectedLetter($point)) {
 					$this->board[$point[0]][$point[1]]['owner'] = $playerValue;
 				}
+			} else if($this->board[$point[0]][$point[1]]['owner'] == $playerValue) {
+				//Do nothing, as the player already owns the letter.
+			} else {
+				//Give all the unowned letters to the player.
+				$this->board[$point[0]][$point[1]]['owner'] = $playerValue;
 			}
 		}
 		array_push($this->wordList, $this->deserializeWord($wordJSON));
 		$this->currentTurn = $this->opponent;
-
-		//Check for game-ending conditions.
-
+		$this->skipCount = 0;
+		$this->checkWinner();
 		if(!$this->save()) {
 			return false;
 		}
 		return true;
 	}
 
-	public function getGameStatus() {
-		/*Gets an array of the game status based on the permissions of the active user.*/
+	public function getGameData() {
+		/*Gets an array of the game data based on the permissions of the active user.*/
 
 		$returnData = array();
-		$returnData['game_id'] = $this->id;
+		$returnData['id'] = $this->id;
 		$returnData['board'] = $this->board;
 		if($this->activePlayer == $this->currentTurn) {
 			$returnData['current_turn'] = true;
@@ -135,19 +161,45 @@ class Game {
 		return $returnData;
 	}
 
-	public function skip() {
+	public function skip($user) {
 		/*Allows a player to pass their turn.*/
 
+		if($this->gameStatus == "finished") {
+			return false;
+		}
+		if($user->id != $this->player1 && $user->id != $this->player2) {
+			return false;
+		}
+		$this->activePlayer = $user->id;
+		if($this->activePlayer != $this->currentTurn) {
+			return false;
+		}
+		$this->opponent = $this->activePlayer == $this->player1 ? $this->player2 : $this->player1;
 		$this->currentTurn = $this->opponent;
+		$this->skipCount ++;
+		$this->checkWinner();
 		if(!$this->save()) {
 			return false;
 		}
 		return true;
 	}
 
-	public function resign() {
+	public function resign($user) {
 		/*Allows a player to forfeit a game.*/
 
+		if($this->gameStatus == "finished") {
+			return false;
+		}
+		if($user->id != $this->player1 && $user->id != $this->player2) {
+			return false;
+		}
+		$this->activePlayer = $user->id;
+		$this->opponent = $this->activePlayer == $this->player1 ? $this->player2 : $this->player1;
+		$this->winner = $this->opponent;
+		$this->gameStatus = "finished";
+		if(!$this->save()) {
+			return false;
+		}
 		return true;
 	}
 
@@ -160,6 +212,22 @@ class Game {
 		if(!$db) {
 			return false;
 		}
+		if(!isset($this->id)) {
+			return false;
+		}
+		$query = "SELECT * FROM games WHERE id='" . $this->id . "'";
+		if(!$result = mysql_query($query, $db)) {
+			return false;
+		}
+		$row = mysql_fetch_array($result);
+		$this->player1 = $row['player1'];
+		$this->player2 = $row['player2'];
+		$this->currentTurn = $row['current_turn'];
+		$this->board = json_decode($row['board']);
+		$this->wordList = json_decode($row['word_list']);
+		$this->gameStatus = $row['game_status'];
+		$this->skipCount = $row['skip_count'];
+		$this->winner = $row['winner'];
 		return true;
 	}
 
@@ -169,6 +237,13 @@ class Game {
 		global $db;
 
 		if(!$db) {
+			return false;
+		}
+		if(!isset($this->id)) {
+			return false;
+		}
+		$query = "UPDATE games SET player1='" . $this->player1 . "', player2='" . $this->player2 . "', current_turn='" . $this->currentTurn . "', board='" . mysql_real_escape_string(json_encode($this->board)) . "', word_list='" . mysql_real_escape_string(json_encode($this->wordList)) . "', game_status='" . $this->gameStatus . "', skip_count='" . $this->skipCount . "', winner='" . $this->winner . "' WHERE id='" . $this->id . "'";
+		if(!mysql_query($query, $db)) {
 			return false;
 		}
 		return true;
@@ -220,6 +295,12 @@ class Game {
 				return false;
 			}
 		}
+		return true;
+	}
+
+	private function checkWinner() {
+		/*Checks to see if there is a winner. It will set all the necessary variables if so.*/
+
 		return true;
 	}
 }

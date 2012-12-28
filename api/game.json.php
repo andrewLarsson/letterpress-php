@@ -9,13 +9,14 @@ action();
 finish();
 
 function action() {
+	global $user;
 	global $game;
 
 	if(isset($_REQUEST['new'])) {
 		if(createNewGame()) {
 			$returnStatement['status'] = 0;
 			$returnStatement['message'] = "Your new game has been created.";
-			$returnStatement['data']['game'] = $game->getGameStatus();
+			$returnStatement['data']['game'] = $game->getGameData();
 			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
@@ -26,7 +27,7 @@ function action() {
 		if(joinGame()) {
 			$returnStatement['status'] = 0;
 			$returnStatement['message'] = "You have joined the game.";
-			$returnStatement['data']['game_id'] = $game->id;
+			$returnStatement['data']['game']['id'] = $game->id;
 			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
@@ -37,7 +38,7 @@ function action() {
 		if(playWord()) {
 			$returnStatement['status'] = 0;
 			$returnStatement['message'] = "Your word has been played.";
-			$returnStatement['data']['game_id'] = $game->id;
+			$returnStatement['data']['game']['id'] = $game->id;
 			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
@@ -48,7 +49,7 @@ function action() {
 		if(skipTurn()) {
 			$returnStatement['status'] = 0;
 			$returnStatement['message'] = "You have skipped your turn.";
-			$returnStatement['data']['game_id'] = $game->id;
+			$returnStatement['data']['game']['id'] = $game->id;
 			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
@@ -59,7 +60,7 @@ function action() {
 		if(resignGame()) {
 			$returnStatement['status'] = 0;
 			$returnStatement['message'] = "You have foreited the game.";
-			$returnStatement['data']['game_id'] = $game->id;
+			$returnStatement['data']['game']['id'] = $game->id;
 			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
@@ -74,21 +75,36 @@ function action() {
 }
 
 function createNewGame() {
+	global $user;
 	global $game;
 
 	if(!isset($_REQUEST['token'])) {
 		return false;
 	}
+	$user = new User($_REQUEST['token']);
+	if(!$user->authenticate()) {
+		return false;
+	}
+	$user->load();
 	$game = new Game();
-	if(!$game->create($_REQUEST['token'])) {
+	if(!$game->create($user)) {
 		return false;
 	}
 	return true;
 }
 
 function joinGame() {
+	global $user;
 	global $game;
 
+	if(!isset($_REQUEST['token'])) {
+		return false;
+	}
+	$user = new User($_REQUEST['token']);
+	if(!$user->authenticate()) {
+		return false;
+	}
+	$user->load();
 	if(isset($_REQUEST['game_id'])) {
 		try {
 			$game = new Game($_REQUEST['game_id']);
@@ -98,58 +114,76 @@ function joinGame() {
 	} else {
 		$game = new Game();
 	}
-	if(!$game->join()) {
+	if(!$game->join($user)) {
 		return false;
 	}
 	return true;
 }
 
 function playWord() {
+	global $user;
 	global $game;
 
-	if(!isset($_REQUEST['game_id']) || !isset($_REQUEST['word'])) {
+	if(!isset($_REQUEST['token']) || !isset($_REQUEST['game_id']) || !isset($_REQUEST['word'])) {
 		return false;
 	}
+	$user = new User($_REQUEST['token']);
+	if(!$user->authenticate()) {
+		return false;
+	}
+	$user->load();
 	try {
 		$game = new Game($_REQUEST['game_id']);
 	} catch(NotFound $e) {
 		return false;
 	}
-	if(!$game->playWord($_REQUEST['word'])) {
+	if(!$game->playWord($user, $_REQUEST['word'])) {
 		return false;
 	}
 	return true;
 }
 
 function skipTurn() {
+	global $user;
 	global $game;
 
-	if(!isset($_REQUEST['game_id'])) {
+	if(!isset($_REQUEST['token']) || !isset($_REQUEST['game_id'])) {
 		return false;
 	}
+	$user = new User($_REQUEST['token']);
+	if(!$user->authenticate()) {
+		return false;
+	}
+	$user->load();
 	try {
 		$game = new Game($_REQUEST['game_id']);
 	} catch(NotFound $e) {
 		return false;
 	}
-	if(!$game->skip()) {
+	if(!$game->skip($user)) {
 		return false;
 	}
 	return true;
 }
 
 function resignGame() {
+	global $user;
 	global $game;
 
-	if(!isset($_REQUEST['game_id'])) {
+	if(!isset($_REQUEST['token']) || !isset($_REQUEST['game_id'])) {
 		return false;
 	}
+	$user = new User($_REQUEST['token']);
+	if(!$user->authenticate()) {
+		return false;
+	}
+	$user->load();
 	try {
 		$game = new Game($_REQUEST['game_id']);
 	} catch(NotFound $e) {
 		return false;
 	}
-	if(!$game->resign()) {
+	if(!$game->resign($user)) {
 		return false;
 	}
 	return true;

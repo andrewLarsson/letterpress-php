@@ -3,6 +3,7 @@ class User {
 	/*Contains all the variables and methods required to construct a token and authenticate it.*/
 
 	/*Public Properties*/
+	public $id;
 	public $token;
 
 	/*Constructor*/
@@ -34,7 +35,7 @@ class User {
 		if(!isset($this->token)) {
 			return false;
 		}
-		$query = "SELECT token FROM users WHERE token='" . $this->token . "';";
+		$query = "SELECT token FROM users WHERE token='" . $this->token . "'";
 		if(!mysql_fetch_array(mysql_query($query, $db))) {
 			return false;
 		}
@@ -42,15 +43,32 @@ class User {
 	}
 
 	/*Private Functions*/
-	private function save() {
-		/*Writes the token to the database.*/
+	private function load() {
+		/*Loads a user from the database with a token.*/
 
 		global $db;
 
 		if(!$db) {
 			return false;
 		}
-		$query = "INSERT INTO users (token) VALUES ('" . $this->token . "');";
+		$query = "SELECT * FROM users WHERE token='" . $this->token . "'";
+		if(!mysql_query($query, $db)) {
+			return false;
+		}
+		$row = mysql_fetch_array($result);
+		$this->id = $row['id']
+		return true;
+	}
+
+	private function save() {
+		/*Writes the user to the database.*/
+
+		global $db;
+
+		if(!$db) {
+			return false;
+		}
+		$query = "INSERT INTO users (token) VALUES ('" . $this->token . "')";
 		if(!mysql_query($query, $db)) {
 			return false;
 		}
