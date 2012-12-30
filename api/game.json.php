@@ -1,6 +1,7 @@
 <?php
 include_once "classes/game.php";
 include_once "classes/word.php";
+include_once "classes/user.php";
 include_once "config/config.php";
 include_once "lib/database.php";
 include_once "lib/json.php";
@@ -27,18 +28,29 @@ function action() {
 		if(joinGame()) {
 			$returnStatement['status'] = 0;
 			$returnStatement['message'] = "You have joined the game.";
-			$returnStatement['data']['game']['id'] = $game->id;
+			$returnStatement['data']['game'] = $game->getGameData();
 			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
 			$returnStatement['message'] = "The game could not be joined.";
 			returnJSON($returnStatement);
 		}
+	} else if(isset($_REQUEST['check'])) {
+		if(check()) {
+			$returnStatement['status'] = 0;
+			$returnStatement['message'] = "The game data was retrieved.";
+			$returnStatement['data']['game'] = $game->getGameData();
+			returnJSON($returnStatement);
+		} else {
+			$returnStatement['status'] = 1;
+			$returnStatement['message'] = "Error getting game status.";
+			returnJSON($returnStatement);
+		}
 	} else if(isset($_REQUEST['play'])) {
 		if(playWord()) {
 			$returnStatement['status'] = 0;
 			$returnStatement['message'] = "Your word has been played.";
-			$returnStatement['data']['game']['id'] = $game->id;
+			$returnStatement['data']['game'] = $game->getGameData();
 			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
@@ -49,7 +61,7 @@ function action() {
 		if(skipTurn()) {
 			$returnStatement['status'] = 0;
 			$returnStatement['message'] = "You have skipped your turn.";
-			$returnStatement['data']['game']['id'] = $game->id;
+			$returnStatement['data']['game'] = $game->getGameData();
 			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
@@ -60,7 +72,7 @@ function action() {
 		if(resignGame()) {
 			$returnStatement['status'] = 0;
 			$returnStatement['message'] = "You have foreited the game.";
-			$returnStatement['data']['game']['id'] = $game->id;
+			$returnStatement['data']['game'] = $game->getGameData();
 			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
@@ -86,8 +98,28 @@ function createNewGame() {
 		return false;
 	}
 	$user->load();
-	$game = new Game();
-	if(!$game->create($user)) {
+	$game = new Game($user);
+	if(!$game->create()) {
+		return false;
+	}
+	return true;
+}
+
+function check() {
+	global $user;
+	global $game;
+
+	if(!isset($_REQUEST['token']) || !isset($_REQUEST['game_id'])) {
+		return false;
+	}
+	$user = new User($_REQUEST['token']);
+	if(!$user->authenticate()) {
+		return false;
+	}
+	$user->load();
+	try {
+		$game = new Game($user, $_REQUEST['game_id']);
+	} catch(NotFound $e) {
 		return false;
 	}
 	return true;
@@ -107,14 +139,14 @@ function joinGame() {
 	$user->load();
 	if(isset($_REQUEST['game_id'])) {
 		try {
-			$game = new Game($_REQUEST['game_id']);
+			$game = new Game($user, $_REQUEST['game_id']);
 		} catch(NotFound $e) {
 			return false;
 		}
 	} else {
-		$game = new Game();
+		$game = new Game($user);
 	}
-	if(!$game->join($user)) {
+	if(!$game->join()) {
 		return false;
 	}
 	return true;
@@ -133,11 +165,11 @@ function playWord() {
 	}
 	$user->load();
 	try {
-		$game = new Game($_REQUEST['game_id']);
+		$game = new Game($user, $_REQUEST['game_id']);
 	} catch(NotFound $e) {
 		return false;
 	}
-	if(!$game->playWord($user, $_REQUEST['word'])) {
+	if(!$game->playWord($_REQUEST['word'])) {
 		return false;
 	}
 	return true;
@@ -156,11 +188,11 @@ function skipTurn() {
 	}
 	$user->load();
 	try {
-		$game = new Game($_REQUEST['game_id']);
+		$game = new Game($user, $_REQUEST['game_id']);
 	} catch(NotFound $e) {
 		return false;
 	}
-	if(!$game->skip($user)) {
+	if(!$game->skip()) {
 		return false;
 	}
 	return true;
@@ -179,11 +211,11 @@ function resignGame() {
 	}
 	$user->load();
 	try {
-		$game = new Game($_REQUEST['game_id']);
+		$game = new Game($user, $_REQUEST['game_id']);
 	} catch(NotFound $e) {
 		return false;
 	}
-	if(!$game->resign($user)) {
+	if(!$game->resign()) {
 		return false;
 	}
 	return true;

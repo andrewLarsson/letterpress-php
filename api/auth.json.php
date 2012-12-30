@@ -55,7 +55,7 @@ function checkAuth() {
 	if(!isset($_REQUEST['token'])) {
 		return false;
 	}
-	$user = new Token($_REQUEST['token']);
+	$user = new User($_REQUEST['token']);
 	if(!$user->authenticate()) {
 		return false;
 	}

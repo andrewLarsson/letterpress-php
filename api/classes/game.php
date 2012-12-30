@@ -7,8 +7,6 @@ class Game {
 
 	/*Public Properties*/
 	public $id;
-	public $player1;
-	public $player2;
 	public $currentTurn;
 	public $board;
 	public $wordList;
@@ -17,21 +15,29 @@ class Game {
 	public $winner;
 
 	/*Private Variables*/
+	private $user;
+	private $player1;
+	private $player2;
 	private $activePlayer;
 	private $opponent;
 
 	/*Constructor*/
-	function __construct($id = NULL) {
+	function __construct($user = NULL, $id = NULL) {
+		if(!isset($user)) {
+			throw(new Exception());
+		}
+		$this->user = $user;
 		if(isset($id)) {
 			$this->id = $id;
+			$this->activePlayer = $this->user->token;
 			if(!$this->load()) {
-				throw(new NotFound());
+				throw(new Exception());
 			}
 		}
 	}
 
 	/*Public Methods*/
-	public function create($user) {
+	public function create() {
 		/*Creates a fresh, empty game.*/
 
 		global $db;
@@ -45,11 +51,9 @@ class Game {
 		while(!$valid) {
 			for($i = 0; $i < 5; $i ++) {
 				for($j = 0; $j < 5; $j ++) {
-					$this->board[$i][$j]["letter"] = substr($letterBank, rand(0, 25), 1);
-
-					//The owner is marked with the player's ID (or a 0 for no owner).
-					$this->board[$i][$j]["owner"] = 0;
-					$placed[$this->board[$i][$j]["letter"]] = true;
+					$this->board[$i][$j]->letter = substr($letterBank, rand(0, 25), 1);
+					$this->board[$i][$j]->owner = 0;
+					$placed[$this->board[$i][$j]->letter] = true;
 				}
 			}
 			$valid = true;
@@ -60,7 +64,7 @@ class Game {
 			}
 		}
 		$this->wordList = array();
-		$this->activePlayer = $this->player1 = $this->currentTurn = $user->id;
+		$this->activePlayer = $this->player1 = $this->currentTurn = $this->user->token;
 		$this->gameStatus = "pending";
 		$this->skipCount = 0;
 
@@ -77,10 +81,11 @@ class Game {
 		}
 		$row = mysql_fetch_array($result);
 		$this->id = $row['id'];
+		
 		return true;
 	}
 
-	public function join($user) {
+	public function join() {
 		/*Allows a player to join an existing game.*/
 
 		global $db;
@@ -97,7 +102,7 @@ class Game {
 		if(!$this->load()) {
 			return false;
 		}
-		$this->player2 = $user->id;
+		$this->player2 = $this->user->token;
 		$this->gameStatus = "inplay";
 		if(!$this->save()) {
 			return false;
@@ -105,35 +110,34 @@ class Game {
 		return true;
 	}
 
-	public function playWord($user, $wordJSON) {
+	public function playWord($wordJSON) {
 		/*Plays a word*/
 
 		if($this->gameStatus == "finished") {
 			return false;
 		}
-		if($user->id != $this->player1 && $user->id != $this->player2) {
+		if($this->user->token != $this->player1 && $this->user->token != $this->player2) {
 			return false;
 		}
-		$this->activePlayer = $user->id;
+		$this->activePlayer = $this->user->token;
 		if($this->activePlayer != $this->currentTurn) {
 			return false;
 		}
-		$this->opponent = $this->activePlayer == $this->player1 ? $this->player2 : $this->player1;
+		if(!$this->checkWord($this->deserializeWord($wordJSON))) {
+			return false;
+		}
+		$this->opponent = ($this->activePlayer == $this->player1) ? $this->player2 : $this->player1;
 		$decoded = json_decode($wordJSON);
-		$playerValue = $this->activePlayer == $this->player1 ? 1 : 2;
-		$opponentValue = $playerValue == 1 ? 2 : 1;
+		$playerValue = ($this->activePlayer == $this->player1) ? 1 : 2;
+		$opponentValue = ($playerValue == 1) ? 2 : 1;
+		$playableLetters = array();
 		foreach($decoded as $point) {
-			if($this->board[$point[0]][$point[1]]['owner'] == $opponentValue) {
-				//Give the player the letter if it's not protected.
-				if(!$this->isProtectedLetter($point)) {
-					$this->board[$point[0]][$point[1]]['owner'] = $playerValue;
-				}
-			} else if($this->board[$point[0]][$point[1]]['owner'] == $playerValue) {
-				//Do nothing, as the player already owns the letter.
-			} else {
-				//Give all the unowned letters to the player.
-				$this->board[$point[0]][$point[1]]['owner'] = $playerValue;
+			if(!$this->isProtectedLetter($point)) {
+				array_push($playableLetters, $point);
 			}
+		}
+		foreach($playableLetters as $point) {
+			$this->board[$point[0]][$point[1]]->owner = $playerValue;
 		}
 		array_push($this->wordList, $this->deserializeWord($wordJSON));
 		$this->currentTurn = $this->opponent;
@@ -151,26 +155,23 @@ class Game {
 		$returnData = array();
 		$returnData['id'] = $this->id;
 		$returnData['board'] = $this->board;
-		if($this->activePlayer == $this->currentTurn) {
-			$returnData['current_turn'] = true;
-		} else {
-			$returnData['current_turn'] = false;
-		}
+		$returnData['currrent_turn'] = ($this->activePlayer == $this->currentTurn) ? true : false;
+		$returnData['player_id'] = ($this->activePlayer == $this->player1) ? 1 : 2;
 		$returnData['word_list'] = $this->wordList;
 		$returnData['game_status'] = $this->gameStatus;
 		return $returnData;
 	}
 
-	public function skip($user) {
+	public function skip() {
 		/*Allows a player to pass their turn.*/
 
 		if($this->gameStatus == "finished") {
 			return false;
 		}
-		if($user->id != $this->player1 && $user->id != $this->player2) {
+		if($this->user->token != $this->player1 && $this->user->token != $this->player2) {
 			return false;
 		}
-		$this->activePlayer = $user->id;
+		$this->activePlayer = $this->user->token;
 		if($this->activePlayer != $this->currentTurn) {
 			return false;
 		}
@@ -184,16 +185,16 @@ class Game {
 		return true;
 	}
 
-	public function resign($user) {
+	public function resign() {
 		/*Allows a player to forfeit a game.*/
 
 		if($this->gameStatus == "finished") {
 			return false;
 		}
-		if($user->id != $this->player1 && $user->id != $this->player2) {
+		if($this->user->token != $this->player1 && $this->user->token != $this->player2) {
 			return false;
 		}
-		$this->activePlayer = $user->id;
+		$this->activePlayer = $this->user->token;
 		$this->opponent = $this->activePlayer == $this->player1 ? $this->player2 : $this->player1;
 		$this->winner = $this->opponent;
 		$this->gameStatus = "finished";
@@ -253,21 +254,25 @@ class Game {
 		/*Represents a word by a JSON array of XY coordinates.*/
 
 		$decoded = json_decode($wordJSON);
-		$word = "";
+		$string = "";
 		foreach($decoded as $point) {
-			$word .= $this->board[$point[0]][$point[1]]['letter'];
+			$string .= $this->board[$point[0]][$point[1]]->letter;
 		}
-		return $word;
+		return $string;
 	}
 
-	private function checkWord($word) {
+	private function checkWord($wordString) {
 		/*Checks a word against all previously played words to make sure it does not match exactly or is a literal prifix of any.*/
 
-		$wordLength = strlen($word);
+		$wordLength = strlen($wordString);
 		foreach($this->wordList as $playedWord) {
-			if(substr($playedWord, 0, $wordLength) == $word) {
+			if(substr($playedWord, 0, $wordLength) == $wordString) {
 				return false;
 			}
+		}
+		$word = new Word($wordString);
+		if(!$word->validate()) {
+			return false;
 		}
 		return true;
 	}
@@ -275,23 +280,26 @@ class Game {
 	private function isProtectedLetter($point) {
 		/*Checks to see if a letter is surrounded by letters that are owned by the same player.*/
 
+		if($this->board[$point[0]][$point[1]]->owner == 0) {
+			return false;
+		}
 		if(array_key_exists($point[0] + 1, $this->board)) {
-			if(!$this->board[$point[0] + 1][$point[1]]['owner'] == $this->board[$point[0]][$point[1]]['owner']) {
+			if(!$this->board[$point[0] + 1][$point[1]]->owner == $this->board[$point[0]][$point[1]]->owner) {
 				return false;
 			}
 		}
 		if(array_key_exists($point[0] - 1, $this->board)) {
-			if(!$this->board[$point[0] - 1][$point[1]]['owner'] == $this->board[$point[0]][$point[1]]['owner']) {
+			if(!$this->board[$point[0] - 1][$point[1]]->owner == $this->board[$point[0]][$point[1]]->owner) {
 				return false;
 			}
 		}
 		if(array_key_exists($point[1] + 1, $this->board[$point[0]])) {
-			if(!$this->board[$point[0]][$point[1] + 1]['owner'] == $this->board[$point[0]][$point[1]]['owner']) {
+			if(!$this->board[$point[0]][$point[1] + 1]->owner == $this->board[$point[0]][$point[1]]->owner) {
 				return false;
 			}
 		}
 		if(array_key_exists($point[1] - 1, $this->board[$point[0]])) {
-			if(!$this->board[$point[0]][$point[1] - 1]['owner'] == $this->board[$point[0]][$point[1]]['owner']) {
+			if(!$this->board[$point[0]][$point[1] - 1]->owner == $this->board[$point[0]][$point[1]]->owner) {
 				return false;
 			}
 		}
@@ -303,8 +311,5 @@ class Game {
 
 		return true;
 	}
-}
-
-class NotFound extends Exception {
 }
 ?>

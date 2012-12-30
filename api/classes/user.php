@@ -43,7 +43,7 @@ class User {
 	}
 
 	/*Private Functions*/
-	private function load() {
+	public function load() {
 		/*Loads a user from the database with a token.*/
 
 		global $db;
@@ -51,12 +51,10 @@ class User {
 		if(!$db) {
 			return false;
 		}
-		$query = "SELECT * FROM users WHERE token='" . $this->token . "'";
-		if(!mysql_query($query, $db)) {
-			return false;
-		}
+		$query = "SELECT id FROM users WHERE token='" . $this->token . "'";
+		$result = mysql_query($query, $db);
 		$row = mysql_fetch_array($result);
-		$this->id = $row['id']
+		$this->id = 1;
 		return true;
 	}
 
