@@ -12,6 +12,7 @@ SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
 
 CREATE TABLE `games` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `hash` varchar(32) NOT NULL,
   `player1` varchar(32) NOT NULL,
   `player2` varchar(32) NOT NULL,
   `current_turn` varchar(32) NOT NULL,
@@ -24,9 +25,8 @@ CREATE TABLE `games` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
 --
--- Dumping data for table `games`
 --
-
+--
 
 -- --------------------------------------------------------
 
@@ -37,9 +37,10 @@ CREATE TABLE `games` (
 CREATE TABLE `users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `token` varchar(32) NOT NULL,
+  `username` varchar(32) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
 --
--- Dumping data for table `users`
+--
 --

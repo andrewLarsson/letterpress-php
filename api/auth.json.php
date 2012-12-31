@@ -11,10 +11,11 @@ function action() {
 	global $user;
 
 	if(isset($_REQUEST['register'])) {
-		if(getNewToken()) {
+		if(createNewUser()) {
 			$returnStatement['status'] = 0;
 			$returnStatement['message'] = "You have been registered.";
 			$returnStatement['data']['user']['token'] = $user->token;
+			$returnStatement['data']['user']['username'] = $user->username;
 			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
@@ -26,6 +27,7 @@ function action() {
 			$returnStatement['status'] = 0;
 			$returnStatement['message'] = "The authentication token is valid.";
 			$returnStatement['data']['user']['token'] = $user->token;
+			$returnStatement['data']['user']['username'] = $user->username;
 			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
@@ -34,16 +36,23 @@ function action() {
 		}
 	} else {
 		$returnStatement['status'] = 1;
-		$returnStatement['message'] = "No action specified.";
+		$returnStatement['message'] = "There was no action specified.";
 		returnJSON($returnStatement);
 	}
 }
 
-function getNewToken() {
+function createNewUser() {
 	global $user;
 
-	$user = new User();
-	if(!$user->register()){
+	if(!isset($_REQUEST['username'])) {
+		return false;
+	}
+	try {
+		$user = new User();
+	} catch(Exception $e) {
+		return false;
+	}
+	if(!$user->register($_REQUEST['username'])) {
 		return false;
 	}
 	return true;
@@ -55,8 +64,9 @@ function checkAuth() {
 	if(!isset($_REQUEST['token'])) {
 		return false;
 	}
-	$user = new User($_REQUEST['token']);
-	if(!$user->authenticate()) {
+	try {
+		$user = new User($_REQUEST['token']);
+	} catch(Exception $e) {
 		return false;
 	}
 	return true;

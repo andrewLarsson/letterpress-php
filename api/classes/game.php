@@ -2,8 +2,7 @@
 class Game {
 	/*Contains all the variables and methods required to construct a game and take action on it.*/
 
-	//A game is represented in MySQL as: id, player1 (user), player2 (user), current_turn (user), board (json), word_list (json), game_status(pending, inplay, finished), skip_count, winner (user).
-	//All players are represented by a user id.
+	//A game is represented in MySQL as: id, hash (md5), player1 (token), player2 (token), current_turn (token), board (json), word_list (json), game_status(pending | inplay | finished), skip_count (integer), winner (token).
 
 	/*Public Properties*/
 	public $id;
@@ -13,12 +12,11 @@ class Game {
 	public $gameStatus;
 	public $skipCount;
 	public $winner;
+	public $user;
 
 	/*Private Variables*/
-	private $user;
 	private $player1;
 	private $player2;
-	private $activePlayer;
 	private $opponent;
 
 	/*Constructor*/
@@ -29,7 +27,6 @@ class Game {
 		$this->user = $user;
 		if(isset($id)) {
 			$this->id = $id;
-			$this->activePlayer = $this->user->token;
 			if(!$this->load()) {
 				throw(new Exception());
 			}
@@ -45,6 +42,7 @@ class Game {
 		if(!$db) {
 			return false;
 		}
+		$this->id = md5(uniqid(rand(), true));
 		$letterBank = "abcdefghijklmnopqrstuvwxyz";
 		$this->board = array();
 		$valid = false;
@@ -64,24 +62,15 @@ class Game {
 			}
 		}
 		$this->wordList = array();
-		$this->activePlayer = $this->player1 = $this->currentTurn = $this->user->token;
+		$this->player1 = $this->currentTurn = $this->user->token;
 		$this->gameStatus = "pending";
 		$this->skipCount = 0;
 
 		//Create new entry in table.
-		$query = "INSERT INTO games (player1, current_turn, board, word_list, game_status, skip_count) VALUES ('" . $this->player1 . "', '" . $this->currentTurn . "', '" . mysql_real_escape_string(json_encode($this->board)) . "', '" . mysql_real_escape_string(json_encode($this->wordList)) . "', '" . $this->gameStatus . "', '" . $this->skipCount . "')";
+		$query = "INSERT INTO games (hash, player1, current_turn, board, word_list, game_status, skip_count) VALUES ('" . mysql_real_escape_string($this->id) . "', '" . mysql_real_escape_string($this->player1) . "', '" . mysql_real_escape_string($this->currentTurn) . "', '" . mysql_real_escape_string(json_encode($this->board)) . "', '" . mysql_real_escape_string(json_encode($this->wordList)) . "', '" . mysql_real_escape_string($this->gameStatus) . "', '" . mysql_real_escape_string($this->skipCount) . "')";
 		if(!mysql_query($query, $db)) {
 			return false;
 		}
-
-		//Get game ID.
-		$query = "SELECT id FROM games WHERE player1='" . $this->player1 . "' ORDER BY id DESC LIMIT 1";
-		if(!$result = mysql_query($query, $db)) {
-			return false;
-		}
-		$row = mysql_fetch_array($result);
-		$this->id = $row['id'];
-		
 		return true;
 	}
 
@@ -93,12 +82,12 @@ class Game {
 		if(!$db) {
 			return false;
 		}
-		$query = "SELECT id FROM games WHERE game_status='pending' ORDER BY id ASC LIMIT 1";
+		$query = "SELECT hash FROM games WHERE game_status='pending' ORDER BY id ASC LIMIT 1";
 		if(!$result = mysql_query($query, $db)) {
 			return false;
 		}
 		$row = mysql_fetch_array($result);
-		$this->id = $row['id'];
+		$this->id = $row['hash'];
 		if(!$this->load()) {
 			return false;
 		}
@@ -119,16 +108,15 @@ class Game {
 		if($this->user->token != $this->player1 && $this->user->token != $this->player2) {
 			return false;
 		}
-		$this->activePlayer = $this->user->token;
-		if($this->activePlayer != $this->currentTurn) {
+		if($this->user->token != $this->currentTurn) {
 			return false;
 		}
 		if(!$this->checkWord($this->deserializeWord($wordJSON))) {
 			return false;
 		}
-		$this->opponent = ($this->activePlayer == $this->player1) ? $this->player2 : $this->player1;
+		$this->opponent = ($this->user->token == $this->player1) ? $this->player2 : $this->player1;
 		$decoded = json_decode($wordJSON);
-		$playerValue = ($this->activePlayer == $this->player1) ? 1 : 2;
+		$playerValue = ($this->user->token == $this->player1) ? 1 : 2;
 		$opponentValue = ($playerValue == 1) ? 2 : 1;
 		$playableLetters = array();
 		foreach($decoded as $point) {
@@ -155,8 +143,8 @@ class Game {
 		$returnData = array();
 		$returnData['id'] = $this->id;
 		$returnData['board'] = $this->board;
-		$returnData['currrent_turn'] = ($this->activePlayer == $this->currentTurn) ? true : false;
-		$returnData['player_id'] = ($this->activePlayer == $this->player1) ? 1 : 2;
+		$returnData['currrent_turn'] = ($this->user->token == $this->currentTurn) ? true : false;
+		$returnData['player_id'] = ($this->user->token == $this->player1) ? 1 : 2;
 		$returnData['word_list'] = $this->wordList;
 		$returnData['game_status'] = $this->gameStatus;
 		return $returnData;
@@ -171,11 +159,10 @@ class Game {
 		if($this->user->token != $this->player1 && $this->user->token != $this->player2) {
 			return false;
 		}
-		$this->activePlayer = $this->user->token;
-		if($this->activePlayer != $this->currentTurn) {
+		if($this->user->token != $this->currentTurn) {
 			return false;
 		}
-		$this->opponent = $this->activePlayer == $this->player1 ? $this->player2 : $this->player1;
+		$this->opponent = ($this->user->token == $this->player1) ? $this->player2 : $this->player1;
 		$this->currentTurn = $this->opponent;
 		$this->skipCount ++;
 		$this->checkWinner();
@@ -194,8 +181,7 @@ class Game {
 		if($this->user->token != $this->player1 && $this->user->token != $this->player2) {
 			return false;
 		}
-		$this->activePlayer = $this->user->token;
-		$this->opponent = $this->activePlayer == $this->player1 ? $this->player2 : $this->player1;
+		$this->opponent = ($this->user->token == $this->player1) ? $this->player2 : $this->player1;
 		$this->winner = $this->opponent;
 		$this->gameStatus = "finished";
 		if(!$this->save()) {
@@ -216,7 +202,7 @@ class Game {
 		if(!isset($this->id)) {
 			return false;
 		}
-		$query = "SELECT * FROM games WHERE id='" . $this->id . "'";
+		$query = "SELECT * FROM games WHERE hash='" . mysql_real_escape_string($this->id) . "'";
 		if(!$result = mysql_query($query, $db)) {
 			return false;
 		}
@@ -243,7 +229,7 @@ class Game {
 		if(!isset($this->id)) {
 			return false;
 		}
-		$query = "UPDATE games SET player1='" . $this->player1 . "', player2='" . $this->player2 . "', current_turn='" . $this->currentTurn . "', board='" . mysql_real_escape_string(json_encode($this->board)) . "', word_list='" . mysql_real_escape_string(json_encode($this->wordList)) . "', game_status='" . $this->gameStatus . "', skip_count='" . $this->skipCount . "', winner='" . $this->winner . "' WHERE id='" . $this->id . "'";
+		$query = "UPDATE games SET player1='" . mysql_real_escape_string($this->player1) . "', player2='" . mysql_real_escape_string($this->player2) . "', current_turn='" . mysql_real_escape_string($this->currentTurn) . "', board='" . mysql_real_escape_string(json_encode($this->board)) . "', word_list='" . mysql_real_escape_string(json_encode($this->wordList)) . "', game_status='" . mysql_real_escape_string($this->gameStatus) . "', skip_count='" . mysql_real_escape_string($this->skipCount) . "', winner='" . mysql_real_escape_string($this->winner) . "' WHERE hash='" . mysql_real_escape_string($this->id) . "'";
 		if(!mysql_query($query, $db)) {
 			return false;
 		}
@@ -309,7 +295,25 @@ class Game {
 	private function checkWinner() {
 		/*Checks to see if there is a winner. It will set all the necessary variables if so.*/
 
-		return true;
+		$endCheck = true;
+		$score = array();
+		$score['player1'] = 0;
+		$score['player2'] = 0;
+		foreach($this->board as $y) {
+			foreach($this->board[$y] as $x) {
+				if($this->board[$y][$x]->owner == 1) {
+					$points['player1'] ++;
+				} else if($this->board[$y][$x]->owner == 2) {
+					$points['player2'] ++;
+				} else {
+					$endCheck = false;
+				}
+			}
+		}
+		if($endCheck == true || $skipCount >= 2) {
+			$this->gameStatus = "finished";
+			$this->winner = ($points['player1'] > $points['player2']) ? $this->player1 : $this->player2;
+		}
 	}
 }
 ?>
