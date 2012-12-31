@@ -6,7 +6,7 @@ class User {
 
 	/*Public Properties*/
 	public $token;
-	public $username
+	public $username;
 
 	/*Constructor*/
 	function __construct($token = NULL) {

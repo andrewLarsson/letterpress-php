@@ -92,8 +92,7 @@ function createNewGame() {
 		return false;
 	}
 	try {
-		$user = new User($_REQUEST['token']);
-		$game = new Game($user);
+		$game = new Game($_REQUEST['token']);
 	} catch(Exception $e) {
 		return false;
 	}
@@ -110,11 +109,10 @@ function joinGame() {
 		return false;
 	}
 	try {
-		$user = new User($_REQUEST['token']);
 		if(isset($_REQUEST['game_id'])) {
-			$game = new Game($user, $_REQUEST['game_id']);
+			$game = new Game($_REQUEST['token'], $_REQUEST['game_id']);
 		} else {
-			$game = new Game($user);
+			$game = new Game($_REQUEST['token']);
 		}
 	} catch(Exception $e) {
 		return false;
@@ -132,8 +130,7 @@ function getData() {
 		return false;
 	}
 	try {
-		$user = new User($_REQUEST['token']);
-		$game = new Game($user, $_REQUEST['game_id']);
+		$game = new Game($_REQUEST['token'], $_REQUEST['game_id']);
 	} catch(Exception $e) {
 		return false;
 	}
@@ -147,8 +144,7 @@ function playWord() {
 		return false;
 	}
 	try {
-		$user = new User($_REQUEST['token']);
-		$game = new Game($user, $_REQUEST['game_id']);
+		$game = new Game($_REQUEST['token'], $_REQUEST['game_id']);
 	} catch(Exception $e) {
 		return false;
 	}
@@ -165,8 +161,7 @@ function skipTurn() {
 		return false;
 	}
 	try {
-		$user = new User($_REQUEST['token']);
-		$game = new Game($user, $_REQUEST['game_id']);
+		$game = new Game($_REQUEST['token'], $_REQUEST['game_id']);
 	} catch(Exception $e) {
 		return false;
 	}
@@ -183,8 +178,7 @@ function resignGame() {
 		return false;
 	}
 	try {
-		$user = new User($_REQUEST['token']);
-		$game = new Game($user, $_REQUEST['game_id']);
+		$game = new Game($_REQUEST['token'], $_REQUEST['game_id']);
 	} catch(Exception $e) {
 		return false;
 	}
