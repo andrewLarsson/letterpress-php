@@ -18,7 +18,11 @@ Example:
 <br/><br/>
 - __game.json.php__
 	- new
+		- token
 	- join
+		- game_id
+		- token
+	- check	
 		- game_id
 		- token
 	- play_word
