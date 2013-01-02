@@ -15,6 +15,7 @@ Example:
 <br/><br/>
 - __auth.json.php__
 	- register
+		- username
 	- authenticate
 		- token
 <br/><br/>
