@@ -2,6 +2,7 @@ letterpress-php
 ===============
 
 Letterpress ported to PHP.
+Copyright 2013 developersBliss.com
 
 API Documentation:
 <br/>
