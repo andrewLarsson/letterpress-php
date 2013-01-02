@@ -160,14 +160,12 @@ class Game {
 		$returnData['word_list'] = $this->wordList;
 		$returnData['game_status'] = $this->gameStatus;
 		$returnData['skip_count'] = (int) $this->skipCount;
-		if(isset($this->winner)) {
-			if($this->user->token == $this->winner) {
-				$returnData['winner'] = ($this->user->token == $this->player1) ? 1 : 2;
-			} else if($this->opponent->token == $this->winner) {
-				$returnData['winner'] = ($this->opponent->token == $this->player1) ? 1 : 2;
-			} else {
-				$returnData['winner'] = "tie";
-			}
+		if($this->user->token == $this->winner) {
+			$returnData['winner'] = ($this->user->token == $this->player1) ? 1 : 2;
+		} else if($this->opponent->token == $this->winner) {
+			$returnData['winner'] = ($this->opponent->token == $this->player1) ? 1 : 2;
+		} else {
+			$returnData['winner'] = $this->winner;
 		}
 		return $returnData;
 	}
