@@ -70,7 +70,7 @@ function action() {
 	} else if(isset($_REQUEST['resign'])) {
 		if(resignGame()) {
 			$returnStatement['status'] = 0;
-			$returnStatement['message'] = "You have foreited the game.";
+			$returnStatement['message'] = "You have forfeited the game.";
 			$returnStatement['data']['game'] = $game->getGameData();
 			returnJSON($returnStatement);
 		} else {
