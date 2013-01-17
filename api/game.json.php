@@ -11,77 +11,65 @@ finish();
 
 function action() {
 	global $game;
+	global $returnStatement;
 
 	if(isset($_REQUEST['new'])) {
 		if(createNewGame()) {
 			$returnStatement['status'] = 0;
 			$returnStatement['message'] = "Your new game has been created.";
 			$returnStatement['data']['game'] = $game->getGameData();
-			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
 			$returnStatement['message'] = "There was a problem creating a new game.";
-			returnJSON($returnStatement);
 		}
 	} else if(isset($_REQUEST['join'])) {
 		if(joinGame()) {
 			$returnStatement['status'] = 0;
 			$returnStatement['message'] = "You have joined the game.";
 			$returnStatement['data']['game'] = $game->getGameData();
-			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
 			$returnStatement['message'] = "The game could not be joined.";
-			returnJSON($returnStatement);
 		}
 	} else if(isset($_REQUEST['check'])) {
 		if(getData()) {
 			$returnStatement['status'] = 0;
 			$returnStatement['message'] = "The game data was retrieved.";
 			$returnStatement['data']['game'] = $game->getGameData();
-			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
 			$returnStatement['message'] = "The game data could not be retrieved.";
-			returnJSON($returnStatement);
 		}
 	} else if(isset($_REQUEST['play'])) {
 		if(playWord()) {
 			$returnStatement['status'] = 0;
 			$returnStatement['message'] = "Your word has been played.";
 			$returnStatement['data']['game'] = $game->getGameData();
-			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
 			$returnStatement['message'] = "The word you played is invalid.";
-			returnJSON($returnStatement);
 		}
 	} else if(isset($_REQUEST['skip'])) {
 		if(skipTurn()) {
 			$returnStatement['status'] = 0;
 			$returnStatement['message'] = "You have skipped your turn.";
 			$returnStatement['data']['game'] = $game->getGameData();
-			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
 			$returnStatement['message'] = "There was a problem skipping your turn.";
-			returnJSON($returnStatement);
 		}
 	} else if(isset($_REQUEST['resign'])) {
 		if(resignGame()) {
 			$returnStatement['status'] = 0;
 			$returnStatement['message'] = "You have forfeited the game.";
 			$returnStatement['data']['game'] = $game->getGameData();
-			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
 			$returnStatement['message'] = "There was a problem forfeiting the game.";
-			returnJSON($returnStatement);
 		}
 	} else {
 		$returnStatement['status'] = 1;
 		$returnStatement['message'] = "There was no action specified.";
-		returnJSON($returnStatement);
 	}
 }
 
@@ -190,7 +178,9 @@ function resignGame() {
 
 function finish() {
 	global $db;
+	global $returnStatement;
 
 	mysql_close($db);
+	returnJSON($returnStatement);
 }
 ?>

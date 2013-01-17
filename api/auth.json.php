@@ -9,6 +9,7 @@ finish();
 
 function action() {
 	global $user;
+	global $returnStatement;
 
 	if(isset($_REQUEST['register'])) {
 		if(createNewUser()) {
@@ -16,11 +17,9 @@ function action() {
 			$returnStatement['message'] = "You have been registered.";
 			$returnStatement['data']['user']['token'] = $user->token;
 			$returnStatement['data']['user']['username'] = $user->username;
-			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
 			$returnStatement['message'] = "There was a problem creating a new user.";
-			returnJSON($returnStatement);
 		}
 	} else if(isset($_REQUEST['authenticate'])) {
 		if(checkAuth()) {
@@ -28,16 +27,13 @@ function action() {
 			$returnStatement['message'] = "The authentication token is valid.";
 			$returnStatement['data']['user']['token'] = $user->token;
 			$returnStatement['data']['user']['username'] = $user->username;
-			returnJSON($returnStatement);
 		} else {
 			$returnStatement['status'] = 1;
 			$returnStatement['message'] = "The authentication token is either missing or invalid.";
-			returnJSON($returnStatement);
 		}
 	} else {
 		$returnStatement['status'] = 1;
 		$returnStatement['message'] = "There was no action specified.";
-		returnJSON($returnStatement);
 	}
 }
 
@@ -74,7 +70,9 @@ function checkAuth() {
 
 function finish() {
 	global $db;
+	global $returnStatement;
 
 	mysql_close($db);
+	returnJSON($returnStatement);
 }
 ?>
