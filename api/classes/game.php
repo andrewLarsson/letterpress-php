@@ -153,7 +153,7 @@ class Game {
 
 		$returnData = array();
 		$returnData['id'] = $this->id;
-		$returnData['currrent_turn'] = ($this->user->token == $this->currentTurn) ? true : false;
+		$returnData['current_turn'] = ($this->user->token == $this->currentTurn) ? true : false;
 		$returnData['player_id'] = ($this->user->token == $this->player1) ? 1 : 2;
 		$returnData['opponent_username'] = $this->opponent->username;
 		$returnData['board'] = $this->board;
