@@ -43,7 +43,9 @@ class User {
 		if(!$result = mysql_query($query, $db)) {
 			return false;
 		}
-		$row = mysql_fetch_array($result);
+		if(!$row = mysql_fetch_array($result)) {
+			return false;
+		}
 		$this->username = $row['username'];
 		return true;
 	}

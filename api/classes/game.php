@@ -98,7 +98,9 @@ class Game {
 		if(!$result = mysql_query($query, $db)) {
 			return false;
 		}
-		$row = mysql_fetch_array($result);
+		if(!$row = mysql_fetch_array($result)) {
+			return false;
+		}
 		$this->id = $row['hash'];
 		if(!$this->load()) {
 			return false;
@@ -224,7 +226,9 @@ class Game {
 		if(!$result = mysql_query($query, $db)) {
 			return false;
 		}
-		$row = mysql_fetch_array($result);
+		if(!$row = mysql_fetch_array($result)) {
+			return false;
+		}
 		$this->player1 = $row['player1'];
 		$this->player2 = $row['player2'];
 		$this->currentTurn = $row['current_turn'];
