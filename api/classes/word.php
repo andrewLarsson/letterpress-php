@@ -3,12 +3,12 @@ class Word {
 	/*Contains all the variables and methods required to construct a token and authenticate it.*/
 
 	/*Public Properties*/
-	public $wordString;
+	private $wordString;
 
 	/*Constructor*/
 	function __construct($string = NULL) {
 		if(isset($string)) {
-			$this->wordString = $string;
+			$this->wordString = sanitize($string);
 		}
 	}
 
@@ -16,30 +16,24 @@ class Word {
 	public function validate() {
 		/*Validates a word with the dictionary.*/
 
-		$file = substr($this->wordString, 0, 2) . ".txt";
-		$handle = @fopen(SITE_ROOT . "/api/resources/dictionary/" . $file, "r");
-		if($handle) {
-			while(($buffer = fgets($handle)) !== false) {
-				if($this->sanitize($this->wordString) == $this->sanitize($buffer)) {
-					return true;
-				}
-			}
-			if(!feof($handle)) {
-				return false;
-			}
-			fclose($handle);
-		} else {
+		if(!$handle = @fopen(SITE_ROOT . "/api/resources/dictionary/" . substr($this->wordString, 0, 2) . ".txt", "r")) {
 			return false;
 		}
+		while(($buffer = fgets($handle)) !== false) {
+			if($this->wordString == $this->sanitize($buffer)) {
+				fclose($handle);
+				return true;
+			}
+		}
+		fclose($handle);
+		return false;
 	}
 
 	/*Private Functions*/
 	private function sanitize($string) {
 		/*Removes any invalid/dangerous characters from a supplied word.*/
 
-		$newWord = strtolower($string);
-		$newWord = preg_replace('/[^a-z]/', '', $newWord);
-		return $newWord;
+		return preg_replace('/[^a-z]/', '', strtolower($string));
 	}
 }
 ?>
