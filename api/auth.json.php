@@ -1,8 +1,8 @@
 <?php
-include_once "classes/user.php";
 include_once "config/config.php";
 include_once "lib/database.php";
 include_once "lib/json.php";
+include_once "models/user.php";
 
 $user = NULL;
 $returnStatement = array();

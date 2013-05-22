@@ -1,10 +1,10 @@
 <?php
-include_once "classes/game.php";
-include_once "classes/word.php";
-include_once "classes/user.php";
 include_once "config/config.php";
 include_once "lib/database.php";
+include_once "lib/word.php";
 include_once "lib/json.php";
+include_once "models/game.php";
+include_once "models/user.php";
 
 $game = NULL;
 $returnStatement = array();
@@ -89,11 +89,13 @@ function joinGame(&$game) {
 		return false;
 	}
 	try {
-		if(isset($_REQUEST['game_id'])) {
-			$game = new Game($_REQUEST['token'], $_REQUEST['game_id']);
-		} else {
-			$game = new Game($_REQUEST['token']);
-		}
+		$game = (
+			(isset($_REQUEST['game_id'])) ? (
+				new Game($_REQUEST['token'], $_REQUEST['game_id'])
+			) : (
+				new Game($_REQUEST['token'])
+			)
+		);
 	} catch(Exception $e) {
 		return false;
 	}

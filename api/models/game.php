@@ -90,11 +90,13 @@ class Game {
 		if(!$db) {
 			return false;
 		}
-		if(isset($this->id)) {
-			$query = "SELECT hash FROM games WHERE hash='" . mysql_real_escape_string($this->id) . "' AND game_status='pending' ORDER BY id ASC LIMIT 1";
-		} else {
-			$query = "SELECT hash FROM games WHERE game_status='pending' ORDER BY id ASC LIMIT 1";
-		}
+		$query = (
+			(isset($this->id)) ? (
+				"SELECT hash FROM games WHERE hash='" . mysql_real_escape_string($this->id) . "' AND game_status='pending' ORDER BY id ASC LIMIT 1"
+			) : (
+				"SELECT hash FROM games WHERE game_status='pending' ORDER BY id ASC LIMIT 1"
+			)
+		);
 		if(!$result = mysql_query($query, $db)) {
 			return false;
 		}
@@ -129,8 +131,20 @@ class Game {
 			return false;
 		}
 		$decoded = json_decode($wordJSON);
-		$playerValue = ($this->user->token == $this->player1) ? 1 : 2;
-		$opponentValue = ($playerValue == 1) ? 2 : 1;
+		$playerValue = (
+			($this->user->token == $this->player1) ? (
+				1
+			) : (
+				2
+			)
+		);
+		$opponentValue = (
+			($playerValue == 1) ? (
+				2
+			) : (
+				1
+			)
+		);
 		$playableLetters = array();
 		foreach($decoded as $point) {
 			if(!$this->isProtectedLetter($point)) {
@@ -155,24 +169,54 @@ class Game {
 
 		$returnData = array();
 		$returnData['id'] = $this->id;
-		$returnData['current_turn'] = ($this->user->token == $this->currentTurn) ? true : false;
-		$returnData['player_id'] = ($this->user->token == $this->player1) ? 1 : 2;
-		$returnData['opponent_username'] = (isset($this->opponent->username)) ? $this->opponent->username : "";
+		$returnData['current_turn'] = (
+			($this->user->token == $this->currentTurn) ? (
+				true
+			) : (
+				false
+			)
+		);
+		$returnData['player_id'] = (
+			($this->user->token == $this->player1) ? (
+				1
+			) : (
+				2
+			)
+		);
+		$returnData['opponent_username'] = (
+			(isset($this->opponent)) ? (
+				$this->opponent->username
+			) : (
+				""
+			)
+		);
 		$returnData['board'] = $this->board;
 		$returnData['word_list'] = $this->wordList;
 		$returnData['game_status'] = $this->gameStatus;
 		$returnData['skip_count'] = (int) $this->skipCount;
-		if($this->gameStatus == "finished") {
-			if($this->user->token == $this->winner) {
-				$returnData['winner'] = ($this->user->token == $this->player1) ? 1 : 2;
-			} else if($this->opponent->token == $this->winner) {
-				$returnData['winner'] = ($this->opponent->token == $this->player1) ? 1 : 2;
-			} else {
-				$returnData['winner'] = $this->winner;
-			}
-		} else {
-			$returnData['winner'] = "";
-		}
+		$returnData['winner'] = (
+			($this->gameStatus == "finished") ? (
+				($this->user->token == $this->winner) ? (
+					($this->user->token == $this->player1) ? (
+						1
+					) : (
+						2
+					)
+				) : (
+					($this->opponent->token == $this->winner) ? (
+						($this->opponent->token == $this->player1) ? (
+							1
+						) : (
+							2
+						)
+					) : (
+						$this->winner
+					)
+				)
+			) : (
+				""
+			)
+		);
 		return $returnData;
 	}
 
@@ -242,7 +286,13 @@ class Game {
 		$this->skipCount = $row['skip_count'];
 		$this->winner = $row['winner'];
 		try {
-			$this->opponent = new User(($this->user->token == $this->player1) ? $this->player2 : $this->player1);
+			$this->opponent = new User(
+				($this->user->token == $this->player1) ? (
+					$this->player2
+				) : (
+					$this->player1
+				)
+			);
 		} catch(Exception $e) {
 			return false;
 		}
@@ -343,13 +393,17 @@ class Game {
 		}
 		if($endCheck == true || $this->skipCount >= 2) {
 			$this->gameStatus = "finished";
-			if($score['player1'] > $score['player2']) {
-				$this->winner = $this->player1;
-			} else if($score['player2'] > $score['player1']) {
-				$this->winner = $this->player2;
-			} else {
-				$this->winner = "tie";
-			}
+			$this->winner = (
+				($score['player1'] > $score['player2']) ? (
+					$this->player1
+				) : (
+					($score['player2'] > $score['player1']) ? (
+						$this->player2
+					) : (
+						"tie"
+					)
+				)
+			);
 		}
 	}
 }

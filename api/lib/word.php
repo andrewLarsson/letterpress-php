@@ -1,6 +1,6 @@
 <?php
 class Word {
-	/*Contains all the variables and methods required to construct a token and authenticate it.*/
+	/*Contains all the variables and methods required to construct a word and validate it.*/
 
 	/*Public Properties*/
 	private $wordString;
