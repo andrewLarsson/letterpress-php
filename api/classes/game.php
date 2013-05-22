@@ -329,9 +329,9 @@ class Game {
 		foreach($this->board as $i => $pointi) {
 			foreach($this->board[$i] as $j => $pointj) {
 				if($this->board[$i][$j]->owner == 1) {
-					$points['player1'] ++;
+					$score['player1'] ++;
 				} else if($this->board[$i][$j]->owner == 2) {
-					$points['player2'] ++;
+					$score['player2'] ++;
 				} else {
 					$endCheck = false;
 				}
