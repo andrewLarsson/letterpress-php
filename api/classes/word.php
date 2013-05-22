@@ -8,7 +8,7 @@ class Word {
 	/*Constructor*/
 	function __construct($string = NULL) {
 		if(isset($string)) {
-			$this->wordString = sanitize($string);
+			$this->wordString = $this->sanitize($string);
 		}
 	}
 
