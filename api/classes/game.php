@@ -157,17 +157,21 @@ class Game {
 		$returnData['id'] = $this->id;
 		$returnData['current_turn'] = ($this->user->token == $this->currentTurn) ? true : false;
 		$returnData['player_id'] = ($this->user->token == $this->player1) ? 1 : 2;
-		$returnData['opponent_username'] = $this->opponent->username;
+		$returnData['opponent_username'] = (isset($this->opponent->username)) ? $this->opponent->username : "";
 		$returnData['board'] = $this->board;
 		$returnData['word_list'] = $this->wordList;
 		$returnData['game_status'] = $this->gameStatus;
 		$returnData['skip_count'] = (int) $this->skipCount;
-		if($this->user->token == $this->winner) {
-			$returnData['winner'] = ($this->user->token == $this->player1) ? 1 : 2;
-		} else if($this->opponent->token == $this->winner) {
-			$returnData['winner'] = ($this->opponent->token == $this->player1) ? 1 : 2;
+		if($this->gameStatus == "finished") {
+			if($this->user->token == $this->winner) {
+				$returnData['winner'] = ($this->user->token == $this->player1) ? 1 : 2;
+			} else if($this->opponent->token == $this->winner) {
+				$returnData['winner'] = ($this->opponent->token == $this->player1) ? 1 : 2;
+			} else {
+				$returnData['winner'] = $this->winner;
+			}
 		} else {
-			$returnData['winner'] = $this->winner;
+			$returnData['winner'] = "";
 		}
 		return $returnData;
 	}
